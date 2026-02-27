@@ -10,11 +10,21 @@ interface Note {
   timestamp: string;
 }
 
+interface UploadedFile {
+  id: string;
+  name: string;
+  uploadedAt: string;
+  selected: boolean;
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("upload");
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  // Files state
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
   // Chat state
   const [question, setQuestion] = useState("");
@@ -63,6 +73,13 @@ export default function App() {
 
       if (response.ok) {
         setMessage("Document uploaded successfully!");
+        const newFile: UploadedFile = {
+          id: Date.now().toString(),
+          name: file.name,
+          uploadedAt: new Date().toLocaleString(),
+          selected: true, // Auto-select newly uploaded file
+        };
+        setUploadedFiles([...uploadedFiles, newFile]);
         setFile(null);
       } else {
         setMessage("Error uploading document. Please try again.");
@@ -74,10 +91,28 @@ export default function App() {
     }
   };
 
+  // File Selection Handler
+  const toggleFileSelection = (fileId: string) => {
+    setUploadedFiles(
+      uploadedFiles.map((f) =>
+        f.id === fileId ? { ...f, selected: !f.selected } : f
+      )
+    );
+  };
+
+  const getSelectedFileNames = (): string => {
+    const selected = uploadedFiles.filter((f) => f.selected);
+    return selected.length > 0 ? selected.map((f) => f.name).join(", ") : "No files selected";
+  };
+
   // Chat Handler
   const handleChat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!question.trim()) return;
+
+    const selectedFileNames = uploadedFiles
+      .filter((f) => f.selected)
+      .map((f) => f.name);
 
     const newHistory = [...chatHistory, { role: "user", content: question }];
     setChatHistory(newHistory);
@@ -92,7 +127,7 @@ export default function App() {
       const response = await fetch("http://localhost:8000/api/chat/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question, selectedFiles: selectedFileNames }),
       });
 
       const data = await response.json();
@@ -110,6 +145,10 @@ export default function App() {
     e.preventDefault();
     if (!researchTopic.trim()) return;
 
+    const selectedFileNames = uploadedFiles
+      .filter((f) => f.selected)
+      .map((f) => f.name);
+
     setResearchLoading(true);
     setResearchResult("");
 
@@ -117,7 +156,7 @@ export default function App() {
       const response = await fetch("http://localhost:8000/api/research/topic", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: researchTopic }),
+        body: JSON.stringify({ topic: researchTopic, selectedFiles: selectedFileNames }),
       });
 
       const data = await response.json();
@@ -254,6 +293,29 @@ export default function App() {
                   {message}
                 </div>
               )}
+
+              {uploadedFiles.length > 0 && (
+                <div className="files-list-container">
+                  <h3>📋 Uploaded Files ({uploadedFiles.length})</h3>
+                  <p className="files-note">Select files to use in Chat and Research</p>
+                  <div className="files-list">
+                    {uploadedFiles.map((uploadedFile) => (
+                      <div key={uploadedFile.id} className="file-item">
+                        <label className="file-checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={uploadedFile.selected}
+                            onChange={() => toggleFileSelection(uploadedFile.id)}
+                            className="file-checkbox"
+                          />
+                          <span className="file-name">{uploadedFile.name}</span>
+                        </label>
+                        <span className="file-time">{uploadedFile.uploadedAt}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -263,6 +325,11 @@ export default function App() {
           <div className="tab-content">
             <div className="chat-section">
               <h2>💬 Interactive Chat</h2>
+              {uploadedFiles.length > 0 && (
+                <div className="selected-files-info">
+                  <strong>Using files:</strong> {getSelectedFileNames()}
+                </div>
+              )}
               <div className="chat-box">
                 <div className="chat-messages">
                   {chatHistory.length === 0 ? (
@@ -307,6 +374,11 @@ export default function App() {
           <div className="tab-content">
             <div className="research-section">
               <h2>🔍 Research Tools</h2>
+              {uploadedFiles.length > 0 && (
+                <div className="selected-files-info">
+                  <strong>Using files:</strong> {getSelectedFileNames()}
+                </div>
+              )}
               <form onSubmit={handleResearch} className="research-form">
                 <input
                   type="text"

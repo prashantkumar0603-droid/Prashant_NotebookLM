@@ -1,13 +1,14 @@
 
+from typing import Optional, List
 from app.agents.planner_agent import plan_research
 from app.rag.pipeline import run_rag
 
-async def research(topic):
+async def research(topic, selected_files: Optional[List[str]] = None):
     try:
         steps = plan_research(topic)
         insights = []
         for step in steps:
-            result = await run_rag(step)
+            result = await run_rag(step, selected_files=selected_files)
             insights.append(result)
         
         return {

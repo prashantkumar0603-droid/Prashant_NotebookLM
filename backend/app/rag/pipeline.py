@@ -1,17 +1,18 @@
 
 import asyncio
 import logging
+from typing import Optional, List
 from app.rag.retriever import retrieve_docs
 from app.llm.loader import LLMManager
 from app.rag.citation_builder import build_citations
 
 logger = logging.getLogger(__name__)
 
-async def run_rag(question):
+async def run_rag(question, selected_files: Optional[List[str]] = None):
     try:
         logger.info(f"Running RAG for question: {question}")
-        
-        # Retrieve documents
+        if selected_files:
+            logger.info(f"Filtering by selected files: {selected_files}")
         docs = retrieve_docs(question)
         logger.info(f"Retrieved {len(docs) if docs else 0} documents")
         
