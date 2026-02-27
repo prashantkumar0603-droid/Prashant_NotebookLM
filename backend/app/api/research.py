@@ -16,6 +16,8 @@ async def run(request: TopicRequest):
         if request.selectedFiles:
             print(f"Research using selected files: {request.selectedFiles}")
         result = await research(request.topic, selected_files=request.selectedFiles)
+        return {
+            "result": result.get("research", result),
             "topic": request.topic,
             "success": result.get("success", True) if isinstance(result, dict) else True
         }
