@@ -23,6 +23,9 @@ async def ask(request: QuestionRequest):
         # Run RAG with timeout of 35 seconds (LLM has 30 second timeout + buffer)
         result = await asyncio.wait_for(
             run_rag(request.question, selected_files=request.selectedFiles),
+            timeout=35.0
+        )
+        return {
             "answer": result.get("answer", "No answer generated"),
             "citations": result.get("citations", []),
             "success": result.get("success", True)
