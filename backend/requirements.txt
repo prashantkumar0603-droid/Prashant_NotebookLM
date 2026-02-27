@@ -1,0 +1,12 @@
+
+fastapi
+uvicorn
+langchain
+faiss-cpu
+pydantic
+python-multipart
+sentence-transformers
+ollama
+pypdf
+python-docx
+sqlalchemy
